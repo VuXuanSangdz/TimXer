@@ -39,7 +39,8 @@ pinned: false
    (hoặc `https://<hf_username>-timexer-ai-voice-age.hf.space`). Trang thu thập dữ liệu: `/collect`.
 
 > Nếu không đưa file ONNX lên (tiết kiệm LFS), app tự dựng model PyTorch: tải backbone DINOv3 từ `timm` lúc khởi
-> động (cần `torch`, `timm` trong `requirements-deploy.txt`) và nạp `timexer_dinov3_head.pt` (~2 MB).
+> động (cần `torch`, `timm` trong `requirements-deploy.txt`) và nạp `timexer_dinov3_head.pt` (~7 MB, đã có trong
+> repo; chứa cả mean/std chuẩn hoá prosody).
 
 ## B. Render / Railway / Fly.io
 

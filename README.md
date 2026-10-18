@@ -258,7 +258,36 @@ Link hệ thống: `https://huggingface.co/spaces/<hf_username>/timexer-ai-voice
 
 ---
 
-## 7. Tài liệu tham khảo
+## 7. Nộp bài: 3 lệnh cần tài khoản (GitHub / Kaggle / Hugging Face)
+
+Repo đã `git commit` sẵn trên nhánh `main`; model đã xuất; dataset đã đóng gói trong `data/kaggle_dataset/`.
+Chạy lần lượt (PowerShell, trong thư mục dự án):
+
+```powershell
+# (1) GitHub — code + README chỉ chỗ update
+gh auth login
+gh repo create timexer-dinov3-voice-age --public --source . --remote origin --push
+# ONNX 94 MB không nằm trong git (xem .gitignore) -> đính kèm vào Release:
+gh release create v1.0 app/model/timexer_dinov3.onnx -t "TimeXer-DINOv3 v1.0" -n "ONNX export (mel, x_ex, prosody -> logits)"
+
+# (2) Kaggle — dataset public
+#   tải kaggle.json tại https://www.kaggle.com/settings -> %USERPROFILE%\.kaggle\kaggle.json
+pip install kaggle
+python scripts/06_package_kaggle.py --with-audio --username <kaggle_username>
+kaggle datasets create -p data/kaggle_dataset --dir-mode zip --public
+#   -> https://www.kaggle.com/datasets/<kaggle_username>/voice-age-timexer-dinov3-vi
+
+# (3) Hugging Face Spaces — hệ thống chạy online (xem app/README_DEPLOY.md)
+hf auth login
+#   ... các bước clone Space / copy src, configs, app / git lfs / push trong README_DEPLOY.md
+#   -> https://huggingface.co/spaces/<hf_username>/timexer-ai-voice-age
+```
+
+Sau khi có link, thay 3 placeholder `<...>` trong README này (§4, §6) rồi `git commit --amend`/`git push`.
+
+---
+
+## 8. Tài liệu tham khảo
 
 * Wang, Y. et al. *TimeXer: Empowering Transformers for Time Series Forecasting with Exogenous Variables.* NeurIPS 2024.
 * Siméoni, O. et al. *DINOv3.* Meta AI, 2025. Trọng số: `timm/vit_small_patch16_dinov3.lvd1689m` (DINOv3 License).
