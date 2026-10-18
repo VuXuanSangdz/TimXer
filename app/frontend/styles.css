@@ -48,7 +48,7 @@ button { font: inherit; cursor: pointer; }
 .check { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #2f55d6; font-size: 12px; }
 
 /* ---------------- main ---------------- */
-.main { padding: 22px 28px 40px; }
+.main { padding: 22px 28px 40px; min-width: 0; }
 .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .topbar-left { display: flex; gap: 14px; align-items: center; }
 .topbar-ico { width: 46px; height: 46px; border-radius: 50%; background: var(--blue-light); color: var(--blue); display: grid; place-items: center; font-weight: 800; letter-spacing: -2px; }
@@ -147,9 +147,11 @@ button { font: inherit; cursor: pointer; }
 .success { color: #15803d; font-size: 13px; margin-top: 10px; }
 .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 800px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar { position: static; height: auto; }
-  .grid-2 { grid-template-columns: 1fr; }
   .form { grid-template-columns: 1fr; }
 }

@@ -76,8 +76,12 @@
     if (audioEl) audioEl.pause();
     audioEl = new Audio(URL.createObjectURL(dec.wav));
     audioEl.ontimeupdate = () => { AudioUtils.drawWaveform($('#wave'), dec.pcm, audioEl.currentTime / dec.duration); $('#time').textContent = `${fmt(audioEl.currentTime)} / ${fmt(dec.duration)}`; };
+    audioEl.onplay = () => { $('#btn-play').textContent = '⏸'; };
+    audioEl.onpause = () => { $('#btn-play').textContent = '▶'; };
+    audioEl.onended = () => { $('#btn-play').textContent = '▶'; AudioUtils.drawWaveform($('#wave'), dec.pcm); $('#time').textContent = `0:00 / ${fmt(dec.duration)}`; };
     AudioUtils.drawWaveform($('#wave'), dec.pcm); $('#time').textContent = `0:00 / ${fmt(dec.duration)}`;
-    $('#btn-play').disabled = false; $('#btn-submit').disabled = false;
+    $('#btn-play').textContent = '▶'; $('#btn-play').disabled = false; $('#btn-submit').disabled = false;
+    $('#mic-title').textContent = 'Nghe lại bằng nút ▶ — ghi lại nếu chưa ưng, hoặc điền thông tin và gửi';
   }
   $('#btn-play').onclick = () => { if (!audioEl) return; audioEl.paused ? audioEl.play() : audioEl.pause(); };
   $('#file-input').onchange = e => e.target.files[0] && setAudio(e.target.files[0], e.target.files[0].name);
@@ -86,7 +90,7 @@
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     chunks = []; rec = new MediaRecorder(stream);
     rec.ondataavailable = e => chunks.push(e.data);
-    rec.onstop = async () => { stream.getTracks().forEach(t => t.stop()); clearInterval(timer); $('#btn-record').classList.remove('recording'); await setAudio(new Blob(chunks, { type: rec.mimeType }), 'recording.wav'); $('#mic-title').textContent = 'Đã ghi — nhấn để ghi lại'; };
+    rec.onstop = async () => { stream.getTracks().forEach(t => t.stop()); clearInterval(timer); $('#btn-record').classList.remove('recording'); await setAudio(new Blob(chunks, { type: rec.mimeType }), 'recording.wav'); };
     rec.start(); t0 = Date.now(); $('#btn-record').classList.add('recording'); $('#mic-title').textContent = 'Đang ghi… nhấn để dừng';
     timer = setInterval(() => { if (Date.now() - t0 > 15000) rec.stop(); }, 200);
   };
