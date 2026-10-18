@@ -1,0 +1,33 @@
+﻿# Ablation: DINOv3 token gộp trung bình theo tần số (14 token × 384-d)
+run_name: timexer_dinov3_vits16_temporal_mean
+data:
+  processed_dir: data/processed
+  dino_cache: data/processed/dino_tokens_vits16_grid.npy
+  use_cache: true
+  balanced_sampling: true
+  token_noise: 0.05
+
+model:
+  type: timexer_dinov3
+  d_model: 128
+  n_heads: 4
+  e_layers: 2
+  d_ff: 256
+  dropout: 0.3
+  dino_model: vit_small_patch16_dinov3.lvd1689m
+  dino_img_size: 224
+  dino_freeze: true
+  dino_token_mode: temporal
+
+train:
+  epochs: 60
+  batch_size: 64
+  lr: 0.0003
+  weight_decay: 0.1
+  label_smoothing: 0.05
+  class_weight_power: 0.5
+  patience: 12
+  min_epochs: 10
+  grad_clip: 1.0
+  device: auto
+  seed: 42

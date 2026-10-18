@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TimeXer AI — Dự đoán độ tuổi từ giọng nói</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%233b6cf5'/%3E%3Crect x='26' y='14' width='12' height='26' rx='6' fill='white'/%3E%3Cpath d='M20 34a12 12 0 0 0 24 0M32 46v8' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+<div class="layout">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo"><svg viewBox="0 0 64 64" width="38" height="38"><circle cx="32" cy="32" r="32" fill="#3b6cf5"/><rect x="26" y="14" width="12" height="26" rx="6" fill="#fff"/><path d="M20 34a12 12 0 0 0 24 0M32 46v8" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/></svg></div>
+      <div class="brand-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <h1 class="brand-title">TimeXer AI</h1>
+    <p class="brand-sub">Dự đoán độ tuổi từ giọng nói</p>
+
+    <nav class="nav">
+      <a href="#home" class="nav-item active" data-view="home"><span class="ico">⌂</span>Trang chủ</a>
+      <a href="#predict" class="nav-item" data-view="predict"><span class="ico">♫</span>Dự đoán</a>
+      <a href="#history" class="nav-item" data-view="history"><span class="ico">◷</span>Lịch sử</a>
+      <a href="#settings" class="nav-item" data-view="settings"><span class="ico">⚙</span>Cài đặt</a>
+      <a href="/collect" class="nav-item"><span class="ico">⇪</span>Đóng góp dữ liệu</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="wave-sm" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <p class="muted-sm">Ứng dụng AI sử dụng mô hình TimeXer + DINOv3</p>
+      <div class="privacy">
+        <div class="privacy-head"><span class="check">✓</span> Bảo mật dữ liệu</div>
+        <p>Âm thanh của bạn được xử lý an toàn và không lưu trữ nếu bạn không đồng ý đóng góp.</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-ico">▐▌▐</div>
+        <div>
+          <h2>Dự đoán độ tuổi từ giọng nói</h2>
+          <p class="muted">Tải lên hoặc ghi âm giọng nói để AI phân tích và dự đoán nhóm tuổi của bạn.</p>
+        </div>
+      </div>
+      <div class="user"><span class="avatar">●</span> Người dùng <span class="chev">⌄</span></div>
+    </header>
+
+    <!-- ===== HOME / PREDICT ===== -->
+    <section id="view-home" class="view active">
+      <div class="grid-2">
+        <!-- Input card -->
+        <div class="card">
+          <div class="tabs">
+            <button class="tab active" data-tab="mic">🎤 Ghi âm trực tiếp</button>
+            <button class="tab" data-tab="upload">⇧ Tải lên file âm thanh</button>
+          </div>
+
+          <div class="tab-pane active" id="pane-mic">
+            <div class="mic-wrap">
+              <button id="btn-record" class="mic-btn" title="Bắt đầu / dừng ghi âm"><span class="mic-ico">🎙</span></button>
+            </div>
+            <p class="mic-title" id="mic-title">Nhấn để bắt đầu ghi âm</p>
+            <p class="muted center" id="mic-sub">Nói 3–8 giây. Hoặc tải lên file âm thanh (MP3, WAV, …)</p>
+          </div>
+
+          <div class="tab-pane" id="pane-upload">
+            <label class="dropzone" id="dropzone">
+              <input type="file" id="file-input" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.webm" hidden />
+              <span class="dz-ico">⇧</span>
+              <span class="dz-title">Kéo thả hoặc bấm để chọn file</span>
+              <span class="muted">MP3, WAV, M4A, OGG, FLAC, WEBM · tối đa 15 MB</span>
+            </label>
+          </div>
+
+          <div class="player" id="player">
+            <button class="play-btn" id="btn-play">▶</button>
+            <canvas id="wave" class="wave-canvas" height="48"></canvas>
+            <span class="time" id="time">0:00 / 0:00</span>
+          </div>
+
+          <button class="primary-btn" id="btn-predict" disabled>✧ Dự đoán độ tuổi</button>
+          <p class="error" id="error" hidden></p>
+        </div>
+
+        <!-- Result card -->
+        <div class="card">
+          <h3 class="card-title"><span class="spark">✦</span> Kết quả dự đoán</h3>
+          <div class="result-hero" id="result-hero">
+            <div class="face" id="face">🙂</div>
+            <div>
+              <div class="muted-sm">Độ tuổi dự đoán</div>
+              <div class="result-age" id="result-age">— </div>
+              <div class="conf-pill" id="conf-pill">◎ Độ tin cậy: —</div>
+            </div>
+          </div>
+          <h4 class="sub-title">Xác suất cho từng nhóm tuổi</h4>
+          <div class="prob-list" id="prob-list"></div>
+          <div class="feat-row" id="feat-row"></div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="card history-card">
+        <div class="card-head">
+          <h3 class="card-title"><span class="ico-blue">◷</span> Lịch sử dự đoán</h3>
+          <a href="#history" class="link-btn" data-view="history">Xem tất cả →</a>
+        </div>
+        <table class="table">
+          <thead><tr><th>Thời gian</th><th>Tệp âm thanh</th><th>Độ tuổi dự đoán</th><th>Độ tin cậy</th><th>Phân phối xác suất</th><th></th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+        <p class="muted-xs">Giao diện theo thiết kế “TimeXer AI” · Mô hình TimeXer-DINOv3 huấn luyện trên dữ liệu Common Voice + dữ liệu đóng góp.</p>
+      </div>
+    </section>
+
+    <!-- ===== HISTORY (full) ===== -->
+    <section id="view-history" class="view">
+      <div class="card">
+        <div class="card-head">
+          <h3 class="card-title"><span class="ico-blue">◷</span> Toàn bộ lịch sử</h3>
+          <button class="ghost-btn" id="btn-clear">Xoá lịch sử</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Thời gian</th><th>Tệp âm thanh</th><th>Độ tuổi dự đoán</th><th>Độ tin cậy</th><th>Phân phối xác suất</th><th></th></tr></thead>
+          <tbody id="history-body-full"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== SETTINGS ===== -->
+    <section id="view-settings" class="view">
+      <div class="card">
+        <h3 class="card-title">⚙ Cài đặt & thông tin mô hình</h3>
+        <dl class="kv" id="model-info"></dl>
+        <h4 class="sub-title">Kiến trúc</h4>
+        <ol class="arch">
+          <li><b>(a) Endogenous embedding — DINOv3</b>: log-Mel 128×251 → ảnh 224×224 → ViT-S/16 → 14 token thời gian + CLS (global token).</li>
+          <li><b>(b) Exogenous embedding</b>: 13 biến ngoại sinh (giờ/thứ ghi âm, thời lượng, SNR, RMS, nguồn mic/upload, sample-rate, F0/energy/ZCR/centroid theo khung) → 13 variate token.</li>
+          <li><b>(c) Self-Attention</b> theo thời gian trên token nội sinh.</li>
+          <li><b>(d) Cross-Attention</b>: global token (query) ↔ variate token (key/value).</li>
+          <li><b>Head</b>: [global ‖ mean(patch)] → MLP → 5 nhóm tuổi.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+</div>
+
+<template id="row-tpl">
+  <tr>
+    <td class="t-time"></td>
+    <td class="t-file"></td>
+    <td><span class="badge"></span></td>
+    <td class="t-conf"></td>
+    <td><div class="mini-bar"><i></i></div></td>
+    <td class="t-more">›</td>
+  </tr>
+</template>
+
+<script src="/static/audio-utils.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

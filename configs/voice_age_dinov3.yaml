@@ -1,0 +1,34 @@
+# TimeXer + DINOv3 (ViT-S/16) — phân loại 5 nhóm tuổi từ giọng nói
+run_name: timexer_dinov3_vits16
+data:
+  processed_dir: data/processed
+  dino_cache: data/processed/dino_tokens_vits16_grid.npy   # [N, 1+196, 384] tạo bởi scripts/04_cache_dinov3_tokens.py
+  use_cache: true            # true = backbone đóng băng, train trên token đã cache (nhanh, CPU-friendly)
+  balanced_sampling: true
+  token_noise: 0.05          # nhiễu nhỏ lên token cache (regularization thay cho SpecAugment)
+
+model:
+  type: timexer_dinov3
+  d_model: 128
+  n_heads: 4
+  e_layers: 2
+  d_ff: 256
+  dropout: 0.3
+  dino_model: vit_small_patch16_dinov3.lvd1689m
+  dino_img_size: 224
+  dino_freeze: true
+  dino_token_mode: temporal_concat  # temporal (14 token, mean tần số) | temporal_concat (14 token × 14 dải tần) | grid (196 token)
+  use_prosody: true          # thêm 1 token nội sinh từ thống kê MFCC/F0/formant/energy (PROSODY_COLS)
+
+train:
+  epochs: 60
+  batch_size: 64
+  lr: 0.0003
+  weight_decay: 0.1
+  label_smoothing: 0.05
+  class_weight_power: 0.5    # trọng số lớp ∝ (N/n_c)^power
+  patience: 12
+  min_epochs: 10
+  grad_clip: 1.0
+  device: auto
+  seed: 42

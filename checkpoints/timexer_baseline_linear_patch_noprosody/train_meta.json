@@ -1,0 +1,173 @@
+{
+  "run_name": "timexer_baseline_linear_patch_noprosody",
+  "config": {
+    "run_name": "timexer_baseline_linear_patch_noprosody",
+    "data": {
+      "processed_dir": "data/processed",
+      "dino_cache": null,
+      "use_cache": false,
+      "balanced_sampling": true,
+      "token_noise": 0.0
+    },
+    "model": {
+      "type": "timexer_baseline",
+      "d_model": 128,
+      "n_heads": 4,
+      "e_layers": 2,
+      "d_ff": 256,
+      "dropout": 0.2,
+      "patch_len": 16
+    },
+    "train": {
+      "epochs": 60,
+      "batch_size": 64,
+      "lr": 0.0005,
+      "weight_decay": 0.05,
+      "label_smoothing": 0.05,
+      "class_weight_power": 0.5,
+      "patience": 12,
+      "min_epochs": 10,
+      "grad_clip": 1.0,
+      "device": "auto",
+      "seed": 42
+    }
+  },
+  "fit": {
+    "best_epoch": 17,
+    "best_score": 0.23516555283188068,
+    "epochs_run": 29
+  },
+  "best_epoch": 17,
+  "trainable_params": 726405,
+  "val_metrics": {
+    "accuracy": 0.35825242718446604,
+    "balanced_accuracy": 0.34043641246404277,
+    "macro_f1": 0.33943739749207485,
+    "weighted_f1": 0.36443259806473494,
+    "ordinal_mae": 1.0427184466019417,
+    "within_one_group_acc": 0.7330097087378641,
+    "per_class_f1": {
+      "<18": 0.3843843843843844,
+      "18-29": 0.42882882882882883,
+      "30-49": 0.3710247349823322,
+      "50-64": 0.2907268170426065,
+      "65+": 0.2222222222222222
+    },
+    "support": {
+      "<18": 202,
+      "18-29": 309,
+      "30-49": 262,
+      "50-64": 159,
+      "65+": 98
+    },
+    "confusion_matrix": [
+      [
+        64,
+        29,
+        44,
+        41,
+        24
+      ],
+      [
+        40,
+        119,
+        77,
+        50,
+        23
+      ],
+      [
+        13,
+        74,
+        105,
+        54,
+        16
+      ],
+      [
+        6,
+        20,
+        52,
+        58,
+        23
+      ],
+      [
+        8,
+        4,
+        26,
+        37,
+        23
+      ]
+    ],
+    "nll": 1.4943459033966064,
+    "mean_confidence": 0.31528204679489136,
+    "ece": 0.04297037859564846,
+    "loss": 1.515321809342764
+  },
+  "test_metrics": {
+    "accuracy": 0.300398406374502,
+    "balanced_accuracy": 0.2688543078093875,
+    "macro_f1": 0.2512496270886423,
+    "weighted_f1": 0.2999074992767752,
+    "ordinal_mae": 1.0733067729083665,
+    "within_one_group_acc": 0.7330677290836654,
+    "per_class_f1": {
+      "<18": 0.0875,
+      "18-29": 0.4406779661016949,
+      "30-49": 0.3029411764705882,
+      "50-64": 0.3145299145299145,
+      "65+": 0.11059907834101383
+    },
+    "support": {
+      "<18": 225,
+      "18-29": 377,
+      "30-49": 294,
+      "50-64": 303,
+      "65+": 56
+    },
+    "confusion_matrix": [
+      [
+        14,
+        70,
+        75,
+        53,
+        13
+      ],
+      [
+        32,
+        156,
+        125,
+        47,
+        17
+      ],
+      [
+        18,
+        72,
+        103,
+        64,
+        37
+      ],
+      [
+        27,
+        30,
+        72,
+        92,
+        82
+      ],
+      [
+        4,
+        3,
+        11,
+        26,
+        12
+      ]
+    ],
+    "nll": 1.4899588823318481,
+    "mean_confidence": 0.32920533418655396,
+    "ece": 0.03354171668865766,
+    "loss": 1.5185765180929724
+  },
+  "n_samples": {
+    "train": 6184,
+    "val": 1030,
+    "test": 1255
+  }
+}

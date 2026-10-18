@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TimeXer AI — Đóng góp dữ liệu giọng nói</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-logo"><svg viewBox="0 0 64 64" width="38" height="38"><circle cx="32" cy="32" r="32" fill="#3b6cf5"/><rect x="26" y="14" width="12" height="26" rx="6" fill="#fff"/><path d="M20 34a12 12 0 0 0 24 0M32 46v8" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/></svg></div></div>
+    <h1 class="brand-title">TimeXer AI</h1>
+    <p class="brand-sub">Thu thập dữ liệu private</p>
+    <nav class="nav">
+      <a href="/" class="nav-item"><span class="ico">⌂</span>Trang chủ</a>
+      <a href="/collect" class="nav-item active"><span class="ico">⇪</span>Đóng góp dữ liệu</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="privacy">
+        <div class="privacy-head"><span class="check">✓</span> Luồng dữ liệu</div>
+        <p>Thiết bị (điện thoại/laptop) → Thu thập → Truyền → Lưu trữ máy chủ → Tiền xử lý → Xây dựng biến đầu vào → Huấn luyện TimeXer.</p>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-ico">⇪</div>
+        <div><h2>Đóng góp bản ghi giọng nói</h2><p class="muted">Ghi 3–8 giây (đọc câu gợi ý bên dưới) và cho biết nhóm tuổi của bạn. Dữ liệu dùng để huấn luyện mô hình.</p></div>
+      </div>
+    </header>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="mic-wrap"><button id="btn-record" class="mic-btn"><span class="mic-ico">🎙</span></button></div>
+        <p class="mic-title" id="mic-title">Nhấn để bắt đầu ghi âm</p>
+        <p class="muted center" id="sentence">“Hôm nay trời đẹp, tôi đi dạo quanh hồ và uống một ly cà phê.”</p>
+        <p class="center"><button class="ghost-btn" id="btn-next">Câu khác</button></p>
+        <div class="player"><button class="play-btn" id="btn-play" disabled>▶</button><canvas id="wave" class="wave-canvas" height="48"></canvas><span class="time" id="time">0:00 / 0:00</span></div>
+        <label class="dropzone" style="padding:16px"><input type="file" id="file-input" accept="audio/*" hidden /><span class="dz-title">…hoặc tải lên file có sẵn</span></label>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Thông tin người đóng góp</h3>
+        <form id="form" class="form">
+          <label>Tuổi (năm)<input type="number" name="age" min="5" max="100" placeholder="vd. 24" /></label>
+          <label>hoặc Nhóm tuổi<select name="age_group"><option value="">— chọn —</option><option>&lt;18</option><option>18-29</option><option>30-49</option><option>50-64</option><option>65+</option></select></label>
+          <label>Giới tính<select name="gender"><option value="">— bỏ qua —</option><option value="male">Nam</option><option value="female">Nữ</option><option value="other">Khác</option></select></label>
+          <label>Ngôn ngữ<select name="locale"><option value="vi">Tiếng Việt</option><option value="en">English</option><option value="other">Khác</option></select></label>
+          <label>Thiết bị<select name="device"><option>phone</option><option>laptop</option><option>headset</option><option>other</option></select></label>
+          <label>Môi trường<select name="environment"><option>quiet</option><option>office</option><option>street</option><option>noisy</option></select></label>
+          <label class="full">Mã người nói (tuỳ chọn, để gom các bản ghi cùng người)<input name="speaker_id" placeholder="vd. sang_01" /></label>
+          <label class="consent full"><input type="checkbox" name="consent" /> Tôi đồng ý chia sẻ bản ghi này để huấn luyện mô hình (ẩn danh).</label>
+          <button class="primary-btn full" id="btn-submit" type="submit" disabled>⇪ Gửi bản ghi</button>
+        </form>
+        <p class="success" id="ok" hidden></p>
+        <p class="error" id="error" hidden></p>
+        <div class="stats" id="stats"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/static/audio-utils.js"></script>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const SENTENCES = ['“Hôm nay trời đẹp, tôi đi dạo quanh hồ và uống một ly cà phê.”', '“Xin chào, tôi đang thử nghiệm hệ thống dự đoán độ tuổi bằng giọng nói.”', '“Buổi sáng tôi thường dậy sớm, tập thể dục rồi ăn sáng cùng gia đình.”', '“Mùa thu Hà Nội có hương hoa sữa và những con đường rợp lá vàng.”', '“Chúng tôi học về mạng nơ-ron, cơ chế chú ý và chuỗi thời gian.”'];
+  let si = 0, current = null, audioEl = null, rec = null, chunks = [], t0 = 0, timer = null;
+  $('#btn-next').onclick = () => { si = (si + 1) % SENTENCES.length; $('#sentence').textContent = SENTENCES[si]; };
+  const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  async function setAudio(blob, name) {
+    const dec = await AudioUtils.decodeToWav(blob);
+    current = { wav: dec.wav, pcm: dec.pcm, duration: dec.duration, name };
+    if (audioEl) audioEl.pause();
+    audioEl = new Audio(URL.createObjectURL(dec.wav));
+    audioEl.ontimeupdate = () => { AudioUtils.drawWaveform($('#wave'), dec.pcm, audioEl.currentTime / dec.duration); $('#time').textContent = `${fmt(audioEl.currentTime)} / ${fmt(dec.duration)}`; };
+    AudioUtils.drawWaveform($('#wave'), dec.pcm); $('#time').textContent = `0:00 / ${fmt(dec.duration)}`;
+    $('#btn-play').disabled = false; $('#btn-submit').disabled = false;
+  }
+  $('#btn-play').onclick = () => { if (!audioEl) return; audioEl.paused ? audioEl.play() : audioEl.pause(); };
+  $('#file-input').onchange = e => e.target.files[0] && setAudio(e.target.files[0], e.target.files[0].name);
+  $('#btn-record').onclick = async () => {
+    if (rec && rec.state === 'recording') return rec.stop();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    chunks = []; rec = new MediaRecorder(stream);
+    rec.ondataavailable = e => chunks.push(e.data);
+    rec.onstop = async () => { stream.getTracks().forEach(t => t.stop()); clearInterval(timer); $('#btn-record').classList.remove('recording'); await setAudio(new Blob(chunks, { type: rec.mimeType }), 'recording.wav'); $('#mic-title').textContent = 'Đã ghi — nhấn để ghi lại'; };
+    rec.start(); t0 = Date.now(); $('#btn-record').classList.add('recording'); $('#mic-title').textContent = 'Đang ghi… nhấn để dừng';
+    timer = setInterval(() => { if (Date.now() - t0 > 15000) rec.stop(); }, 200);
+  };
+  $('#form').onsubmit = async e => {
+    e.preventDefault(); $('#ok').hidden = true; $('#error').hidden = true;
+    if (!current) return;
+    const fd = new FormData(e.target);
+    fd.set('consent', e.target.consent.checked ? 'true' : 'false');
+    fd.append('file', current.wav, current.name);
+    fd.append('sentence', $('#sentence').textContent);
+    const r = await fetch('/api/collect', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!r.ok) { $('#error').textContent = j.detail || 'Lỗi'; $('#error').hidden = false; return; }
+    $('#ok').textContent = `Cảm ơn! Đã lưu bản ghi ${j.clip_id} (nhóm ${j.age_group}).`; $('#ok').hidden = false; loadStats();
+  };
+  async function loadStats() { const s = await (await fetch('/api/collect/stats')).json(); $('#stats').innerHTML = `<span class="chip">Tổng: ${s.total}</span>` + Object.entries(s.by_group).map(([g, n]) => `<span class="chip">${g}: ${n}</span>`).join(''); }
+  AudioUtils.drawWaveform($('#wave'), null); loadStats();
+})();
+</script>
+</body>
+</html>

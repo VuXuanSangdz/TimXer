@@ -1,0 +1,31 @@
+# Ablation: TimeXer gốc (khối (a) = linear patch embedding) — cùng (b)(c)(d) và head
+run_name: timexer_baseline_linear_patch
+data:
+  processed_dir: data/processed
+  dino_cache: null
+  use_cache: false
+  balanced_sampling: true
+  token_noise: 0.0
+
+model:
+  type: timexer_baseline
+  d_model: 128
+  n_heads: 4
+  e_layers: 2
+  d_ff: 256
+  dropout: 0.2
+  patch_len: 16              # 251 khung -> 15 patch thời gian (xấp xỉ 14 token của DINOv3)
+  use_prosody: true          # cùng prosody token như mô hình đề xuất để so sánh công bằng
+
+train:
+  epochs: 60
+  batch_size: 64
+  lr: 0.0005
+  weight_decay: 0.05
+  label_smoothing: 0.05
+  class_weight_power: 0.5
+  patience: 12
+  min_epochs: 10
+  grad_clip: 1.0
+  device: auto
+  seed: 42

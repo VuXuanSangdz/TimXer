@@ -1,0 +1,90 @@
+[
+ {
+  "model":"LogReg (MFCC\/F0\/formant stats)",
+  "type":"classical",
+  "accuracy":0.3490039841,
+  "balanced_accuracy":0.3212094982,
+  "macro_f1":0.3126850727,
+  "ordinal_mae":1.0501992032,
+  "within_one_group_acc":0.7290836653,
+  "params":"-",
+  "best_epoch":null
+ },
+ {
+  "model":"HistGradientBoosting (scalar feats)",
+  "type":"classical",
+  "accuracy":0.4055776892,
+  "balanced_accuracy":0.3316449261,
+  "macro_f1":0.328136184,
+  "ordinal_mae":0.9099601594,
+  "within_one_group_acc":0.7657370518,
+  "params":"-",
+  "best_epoch":null
+ },
+ {
+  "model":"TimeXer gốc + prosody token",
+  "type":"timexer_baseline",
+  "accuracy":0.3625498008,
+  "balanced_accuracy":0.3272940001,
+  "macro_f1":0.3207576642,
+  "ordinal_mae":1.0725099602,
+  "within_one_group_acc":0.6980079681,
+  "params":"0.75M",
+  "best_epoch":22.0
+ },
+ {
+  "model":"TimeXer gốc (linear patch embedding)",
+  "type":"timexer_baseline",
+  "accuracy":0.3003984064,
+  "balanced_accuracy":0.2688543078,
+  "macro_f1":0.2512496271,
+  "ordinal_mae":1.0733067729,
+  "within_one_group_acc":0.7330677291,
+  "params":"0.73M",
+  "best_epoch":17.0
+ },
+ {
+  "model":"TimeXer + DINOv3 ViT-S\/16, temporal_concat + prosody token (đề xuất)",
+  "type":"timexer_dinov3",
+  "accuracy":0.3896414343,
+  "balanced_accuracy":0.3362514934,
+  "macro_f1":0.3347595591,
+  "ordinal_mae":0.9442231076,
+  "within_one_group_acc":0.7553784861,
+  "params":"1.22M",
+  "best_epoch":15.0
+ },
+ {
+  "model":"TimeXer + DINOv3, token grid 196 (ablation, không prosody)",
+  "type":"timexer_dinov3",
+  "accuracy":0.3051792829,
+  "balanced_accuracy":0.3480826103,
+  "macro_f1":0.2822268362,
+  "ordinal_mae":1.1115537849,
+  "within_one_group_acc":0.7131474104,
+  "params":"0.56M",
+  "best_epoch":23.0
+ },
+ {
+  "model":"TimeXer + DINOv3 ViT-S\/16, temporal_concat (không prosody)",
+  "type":"timexer_dinov3",
+  "accuracy":0.3545816733,
+  "balanced_accuracy":0.3334090641,
+  "macro_f1":0.3069266168,
+  "ordinal_mae":1.0390438247,
+  "within_one_group_acc":0.7179282869,
+  "params":"1.20M",
+  "best_epoch":20.0
+ },
+ {
+  "model":"TimeXer + DINOv3, token temporal mean (ablation, không prosody)",
+  "type":"timexer_dinov3",
+  "accuracy":0.3091633466,
+  "balanced_accuracy":0.3557399588,
+  "macro_f1":0.2931462715,
+  "ordinal_mae":1.1314741036,
+  "within_one_group_acc":0.6996015936,
+  "params":"0.56M",
+  "best_epoch":18.0
+ }
+]
