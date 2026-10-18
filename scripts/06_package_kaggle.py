@@ -55,6 +55,22 @@ def main():
     for f in ["metadata.csv", "features_scalar.csv", "dataset_manifest.json", "mel_logspec.npy", "exog_series.npy"]:
         shutil.copy2(src / f, out / f)
 
+    # Đầu ra bước "Thu thập" (manifest thô, không kèm mp3 gốc) — để notebook Kaggle minh hoạ luồng từ đầu
+    raw_manifest = ROOT / "data" / "raw" / "raw_manifest.csv"
+    if raw_manifest.exists():
+        shutil.copy2(raw_manifest, out / "raw_manifest.csv")
+
+    # Code pipeline (src/common, src/data, scripts 01-03) để notebook Kaggle import trực tiếp
+    code_dir = out / "code"
+    if code_dir.exists():
+        shutil.rmtree(code_dir)
+    for rel in ["src/__init__.py", "src/common/__init__.py", "src/common/constants.py", "src/data/__init__.py",
+                "src/data/audio_processing.py", "src/data/dataset.py",
+                "scripts/01_seed_common_voice.py", "scripts/02_ingest_private.py", "scripts/03_build_dataset.py"]:
+        dst = code_dir / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / rel, dst)
+
     if args.with_audio:
         import soundfile as sf
 
@@ -111,6 +127,8 @@ Dữ liệu được xây dựng theo đúng luồng ở slide thiết kế:
 | `exog_series.npy` | float16 `[N, 13, 251]` — biến ngoại sinh **x ∈ R^(T×d_x)**: {manifest['exogenous_x']['columns']} |
 | `audio_16k_flac/` | (tuỳ chọn) waveform 5 s đã khử nhiễu / chuẩn hoá |
 | `dataset_manifest.json` | schema + thống kê |
+| `raw_manifest.csv` | đầu ra bước **Thu thập** (trước tiền xử lý): clip_id, path, source, speaker_id, age_group, age_raw, gender, locale, recorded_at, device, environment, sentence |
+| `code/` | code pipeline (`src/data/audio_processing.py`, `scripts/01…03`) — notebook Kaggle import trực tiếp |
 
 Nhóm tuổi: `<18`, `18-29`, `30-49`, `50-64`, `65+` (ánh xạ từ nhãn thập niên Common Voice: teens→<18, twenties→18-29,
 thirties/fourties→30-49, fifties/sixties→50-64, seventies+→65+).

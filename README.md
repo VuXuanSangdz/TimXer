@@ -157,15 +157,21 @@ Thống kê bộ dữ liệu đã dựng (xem `data/processed/dataset_manifest.j
 
 ![Dataset](reports/figures/fig_dataset.png)
 
-**Đưa lên Kaggle (public)**
+**Đưa lên Kaggle (public)** — dataset + notebook "Quy trình thu thập & xử lý dữ liệu"
 
-```bash
-python scripts/06_package_kaggle.py --with-audio          # -> data/kaggle_dataset/ (+ dataset-metadata.json, README)
+```powershell
+# một lệnh (cần %USERPROFILE%\.kaggle\kaggle.json): đóng gói dataset -> upload -> push notebook
+.\kaggle\push_kaggle.ps1 -Username sangvuxuan
+# tương đương:
+python scripts/06_package_kaggle.py --with-audio --username sangvuxuan   # -> data/kaggle_dataset/ (+ code/, raw_manifest.csv)
 kaggle datasets create -p data/kaggle_dataset --dir-mode zip --public
-# cập nhật: kaggle datasets version -p data/kaggle_dataset -m "v2" --dir-mode zip
+python kaggle/make_data_pipeline_notebook.py && kaggle kernels push -p kaggle/data_pipeline
 ```
 
-Link dataset: `https://www.kaggle.com/datasets/<kaggle_username>/voice-age-timexer-dinov3-vi` (điền sau khi upload).
+* Dataset: `https://www.kaggle.com/datasets/sangvuxuan/voice-age-timexer-dinov3-vi`
+* Notebook pipeline dữ liệu (chạy code thật của `src/data/audio_processing.py`, `scripts/01…03` trên dataset đính kèm):
+  [`kaggle/data_pipeline/timexer-voice-age-data-pipeline.ipynb`](kaggle/data_pipeline/timexer-voice-age-data-pipeline.ipynb)
+  → `https://www.kaggle.com/code/sangvuxuan/notebookd2bdfc5ac9`
 
 ---
 
@@ -270,12 +276,12 @@ gh repo create timexer-dinov3-voice-age --public --source . --remote origin --pu
 # ONNX 94 MB không nằm trong git (xem .gitignore) -> đính kèm vào Release:
 gh release create v1.0 app/model/timexer_dinov3.onnx -t "TimeXer-DINOv3 v1.0" -n "ONNX export (mel, x_ex, prosody -> logits)"
 
-# (2) Kaggle — dataset public
+# (2) Kaggle — dataset public + notebook quy trình dữ liệu
 #   tải kaggle.json tại https://www.kaggle.com/settings -> %USERPROFILE%\.kaggle\kaggle.json
 pip install kaggle
-python scripts/06_package_kaggle.py --with-audio --username <kaggle_username>
-kaggle datasets create -p data/kaggle_dataset --dir-mode zip --public
-#   -> https://www.kaggle.com/datasets/<kaggle_username>/voice-age-timexer-dinov3-vi
+.\kaggle\push_kaggle.ps1 -Username sangvuxuan
+#   -> https://www.kaggle.com/datasets/sangvuxuan/voice-age-timexer-dinov3-vi
+#   -> https://www.kaggle.com/code/sangvuxuan/notebookd2bdfc5ac9
 
 # (3) Hugging Face Spaces — hệ thống chạy online (xem app/README_DEPLOY.md)
 hf auth login

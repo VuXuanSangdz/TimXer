@@ -1,0 +1,15 @@
+{
+  "id": "sangvuxuan/notebookd2bdfc5ac9",
+  "title": "TimeXer-DINOv3 Voice Age — Quy trình thu thập & xử lý dữ liệu",
+  "code_file": "timexer-voice-age-data-pipeline.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": ["sangvuxuan/voice-age-timexer-dinov3-vi"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}
