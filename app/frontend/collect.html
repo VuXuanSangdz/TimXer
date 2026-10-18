@@ -28,7 +28,7 @@
     <header class="topbar">
       <div class="topbar-left">
         <div class="topbar-ico">⇪</div>
-        <div><h2>Đóng góp bản ghi giọng nói</h2><p class="muted">Ghi 3–8 giây (đọc câu gợi ý bên dưới) và cho biết nhóm tuổi của bạn. Dữ liệu dùng để huấn luyện mô hình.</p></div>
+        <div><h2>Đóng góp bản ghi giọng nói</h2><p class="muted">Ghi 3–8 giây, nghe lại, rồi gửi kèm tuổi. Micro chỉ hoạt động trên <b>https://</b> hoặc <b>localhost</b> — điện thoại cùng Wi‑Fi chạy <code>app/run_https_lan.ps1</code>.</p></div>
       </div>
     </header>
 
@@ -46,7 +46,7 @@
         <h3 class="card-title">Thông tin người đóng góp</h3>
         <form id="form" class="form">
           <label>Tuổi (năm)<input type="number" name="age" min="5" max="100" placeholder="vd. 24" /></label>
-          <label>hoặc Nhóm tuổi<select name="age_group"><option value="">— chọn —</option><option>&lt;18</option><option>18-29</option><option>30-49</option><option>50-64</option><option>65+</option></select></label>
+          <label>hoặc Nhóm tuổi<select name="age_group"><option value="">— chọn —</option><option value="&lt;18">&lt;18</option><option value="18-29">18-29</option><option value="30-49">30-49</option><option value="50-64">50-64</option><option value="65+">65+</option></select></label>
           <label>Giới tính<select name="gender"><option value="">— bỏ qua —</option><option value="male">Nam</option><option value="female">Nữ</option><option value="other">Khác</option></select></label>
           <label>Ngôn ngữ<select name="locale"><option value="vi">Tiếng Việt</option><option value="en">English</option><option value="other">Khác</option></select></label>
           <label>Thiết bị<select name="device"><option>phone</option><option>laptop</option><option>headset</option><option>other</option></select></label>
@@ -67,13 +67,43 @@
 (() => {
   const $ = s => document.querySelector(s);
   const SENTENCES = ['“Hôm nay trời đẹp, tôi đi dạo quanh hồ và uống một ly cà phê.”', '“Xin chào, tôi đang thử nghiệm hệ thống dự đoán độ tuổi bằng giọng nói.”', '“Buổi sáng tôi thường dậy sớm, tập thể dục rồi ăn sáng cùng gia đình.”', '“Mùa thu Hà Nội có hương hoa sữa và những con đường rợp lá vàng.”', '“Chúng tôi học về mạng nơ-ron, cơ chế chú ý và chuỗi thời gian.”'];
-  let si = 0, current = null, audioEl = null, rec = null, chunks = [], t0 = 0, timer = null;
+  let si = 0, current = null, audioEl = null, rec = null, chunks = [], t0 = 0, timer = null, stopping = false;
   $('#btn-next').onclick = () => { si = (si + 1) % SENTENCES.length; $('#sentence').textContent = SENTENCES[si]; };
   const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-  async function setAudio(blob, name) {
-    const dec = await AudioUtils.decodeToWav(blob);
-    current = { wav: dec.wav, pcm: dec.pcm, duration: dec.duration, name };
-    if (audioEl) audioEl.pause();
+  const showError = m => { $('#error').textContent = m; $('#error').hidden = false; $('#ok').hidden = true; };
+  const hideMsg = () => { $('#error').hidden = true; $('#ok').hidden = true; };
+  const fmtDetail = d => {
+    if (!d) return 'lỗi không rõ';
+    if (typeof d === 'string') return d;
+    if (Array.isArray(d)) return d.map(x => x.msg || JSON.stringify(x)).join('; ');
+    return d.msg || JSON.stringify(d);
+  };
+  const pickMime = () => ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/ogg;codecs=opus'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+
+  const lanHttp = !window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+  const micAvailable = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder) && !lanHttp;
+  if (lanHttp) {
+    $('#mic-title').textContent = 'Micro bị chặn trên HTTP — dùng HTTPS hoặc tải file';
+    showError(`Trình duyệt chặn micro vì trang mở qua http://${location.host}. Trên máy tính hãy mở http://localhost:7860/collect; trên điện thoại chạy app/run_https_lan.ps1 rồi mở https://<IP>:7860/collect (chấp nhận cảnh báo chứng chỉ). Hoặc ghi bằng app Ghi âm rồi tải file lên.`);
+  } else if (!micAvailable) {
+    $('#mic-title').textContent = 'Trình duyệt không hỗ trợ ghi âm';
+    showError('Hãy dùng "tải lên file có sẵn" (WAV/MP3/M4A).');
+  }
+
+  if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    const dev = document.querySelector('select[name=device]');
+    if (dev && !dev.dataset.touched) dev.value = 'phone';
+  }
+  document.querySelector('select[name=device]').addEventListener('change', function () { this.dataset.touched = '1'; });
+
+  async function setAudio(blob) {
+    hideMsg();
+    let dec;
+    try { dec = await AudioUtils.decodeToWav(blob); }
+    catch (err) { showError('Không giải mã được âm thanh (' + (err.message || err) + '). Hãy ghi lại hoặc tải WAV/MP3/M4A.'); return false; }
+    if (dec.duration < 0.8) { showError(`Bản ghi quá ngắn (${dec.duration.toFixed(1)} s). Hãy nói 3–8 giây rồi mới dừng.`); return false; }
+    current = { wav: dec.wav, pcm: dec.pcm, duration: dec.duration };
+    if (audioEl) { audioEl.pause(); URL.revokeObjectURL(audioEl.src); }
     audioEl = new Audio(URL.createObjectURL(dec.wav));
     audioEl.ontimeupdate = () => { AudioUtils.drawWaveform($('#wave'), dec.pcm, audioEl.currentTime / dec.duration); $('#time').textContent = `${fmt(audioEl.currentTime)} / ${fmt(dec.duration)}`; };
     audioEl.onplay = () => { $('#btn-play').textContent = '⏸'; };
@@ -82,31 +112,87 @@
     AudioUtils.drawWaveform($('#wave'), dec.pcm); $('#time').textContent = `0:00 / ${fmt(dec.duration)}`;
     $('#btn-play').textContent = '▶'; $('#btn-play').disabled = false; $('#btn-submit').disabled = false;
     $('#mic-title').textContent = 'Nghe lại bằng nút ▶ — ghi lại nếu chưa ưng, hoặc điền thông tin và gửi';
+    return true;
   }
   $('#btn-play').onclick = () => { if (!audioEl) return; audioEl.paused ? audioEl.play() : audioEl.pause(); };
-  $('#file-input').onchange = e => e.target.files[0] && setAudio(e.target.files[0], e.target.files[0].name);
+  $('#file-input').onchange = e => e.target.files[0] && setAudio(e.target.files[0]);
+
+  const MIC_ERRORS = {
+    NotAllowedError: 'Bạn đã từ chối quyền micro. Bấm biểu tượng ổ khoá/micro trên thanh địa chỉ → Cho phép, rồi thử lại.',
+    PermissionDeniedError: 'Bạn đã từ chối quyền micro. Bấm biểu tượng ổ khoá/micro trên thanh địa chỉ → Cho phép, rồi thử lại.',
+    NotFoundError: 'Không tìm thấy micro nào trên thiết bị.',
+    NotReadableError: 'Micro đang bị ứng dụng khác chiếm (Zoom/Teams/Ghi âm…). Đóng ứng dụng đó rồi thử lại.',
+    SecurityError: 'Trình duyệt chặn micro vì trang không chạy HTTPS. Mở localhost hoặc chạy app/run_https_lan.ps1.',
+    NotSupportedError: 'Trình duyệt này không hỗ trợ ghi âm. Hãy tải lên file có sẵn.',
+  };
+
+  function stopRec() {
+    if (!rec || rec.state !== 'recording' || stopping) return;
+    stopping = true;
+    try { rec.requestData && rec.requestData(); } catch (_) {}
+    try { rec.stop(); } catch (_) { stopping = false; }
+  }
+
   $('#btn-record').onclick = async () => {
-    if (rec && rec.state === 'recording') return rec.stop();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    chunks = []; rec = new MediaRecorder(stream);
-    rec.ondataavailable = e => chunks.push(e.data);
-    rec.onstop = async () => { stream.getTracks().forEach(t => t.stop()); clearInterval(timer); $('#btn-record').classList.remove('recording'); await setAudio(new Blob(chunks, { type: rec.mimeType }), 'recording.wav'); };
-    rec.start(); t0 = Date.now(); $('#btn-record').classList.add('recording'); $('#mic-title').textContent = 'Đang ghi… nhấn để dừng';
-    timer = setInterval(() => { if (Date.now() - t0 > 15000) rec.stop(); }, 200);
+    if (rec && rec.state === 'recording') { stopRec(); return; }
+    if (!micAvailable) { showError(lanHttp ? `Micro bị chặn trên http://${location.host}. Dùng localhost, HTTPS LAN, hoặc tải file.` : 'Trình duyệt không hỗ trợ ghi âm — hãy tải lên file.'); return; }
+    hideMsg();
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+    catch (err) { showError(MIC_ERRORS[err.name] || ('Không truy cập được micro: ' + (err.message || err.name))); return; }
+    chunks = []; stopping = false;
+    const mime = pickMime();
+    try { rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+    catch (err) { stream.getTracks().forEach(t => t.stop()); showError('Không khởi tạo được bộ ghi âm: ' + err.message); return; }
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onerror = e => showError('Lỗi ghi âm: ' + (e.error ? e.error.message : 'không rõ'));
+    rec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop()); clearInterval(timer); stopping = false;
+      $('#btn-record').classList.remove('recording'); $('#mic-title').textContent = 'Đang xử lý bản ghi…';
+      if (!chunks.length) { showError('Không thu được dữ liệu — kiểm tra micro có bật và không bị tắt tiếng.'); $('#mic-title').textContent = 'Nhấn để bắt đầu ghi âm'; return; }
+      const ok = await setAudio(new Blob(chunks, { type: rec.mimeType || mime || 'audio/webm' }));
+      if (!ok) $('#mic-title').textContent = 'Nhấn để ghi lại';
+    };
+    try { rec.start(); }  // không dùng timeslice — Safari/iOS hay ra file rỗng nếu start(250)
+    catch (err) { stream.getTracks().forEach(t => t.stop()); showError('Không bắt đầu ghi được: ' + err.message); return; }
+    t0 = Date.now(); $('#btn-record').classList.add('recording'); $('#mic-title').textContent = 'Đang ghi… nhấn để dừng';
+    timer = setInterval(() => {
+      $('#mic-title').textContent = `Đang ghi… ${((Date.now() - t0) / 1000).toFixed(1)} s — nhấn để dừng`;
+      if (Date.now() - t0 > 15000) stopRec();
+    }, 200);
   };
+
   $('#form').onsubmit = async e => {
-    e.preventDefault(); $('#ok').hidden = true; $('#error').hidden = true;
-    if (!current) return;
-    const fd = new FormData(e.target);
-    fd.set('consent', e.target.consent.checked ? 'true' : 'false');
-    fd.append('file', current.wav, current.name);
+    e.preventDefault(); hideMsg();
+    const f = e.target;
+    if (!current) { showError('Chưa có bản ghi — hãy ghi âm hoặc tải lên file trước.'); return; }
+    if (!String(f.age.value || '').trim() && !f.age_group.value) { showError('Hãy nhập tuổi hoặc chọn nhóm tuổi.'); f.age.focus(); return; }
+    if (!f.consent.checked) { showError('Hãy tích ô đồng ý chia sẻ bản ghi.'); return; }
+    const fd = new FormData();
+    fd.append('file', current.wav, 'recording.wav');
+    if (f.age.value) fd.append('age', String(f.age.value).trim());
+    if (f.age_group.value) fd.append('age_group', f.age_group.value);
+    fd.append('gender', f.gender.value || '');
+    fd.append('locale', f.locale.value || 'vi');
+    fd.append('device', f.device.value || 'unknown');
+    fd.append('environment', f.environment.value || 'unknown');
+    fd.append('speaker_id', (f.speaker_id.value || '').trim());
     fd.append('sentence', $('#sentence').textContent);
-    const r = await fetch('/api/collect', { method: 'POST', body: fd });
-    const j = await r.json();
-    if (!r.ok) { $('#error').textContent = j.detail || 'Lỗi'; $('#error').hidden = false; return; }
-    $('#ok').textContent = `Cảm ơn! Đã lưu bản ghi ${j.clip_id} (nhóm ${j.age_group}).`; $('#ok').hidden = false; loadStats();
+    fd.append('consent', 'true');
+    const btn = $('#btn-submit'); btn.disabled = true; btn.textContent = 'Đang gửi…';
+    const dur = current.duration;
+    try {
+      const r = await fetch('/api/collect', { method: 'POST', body: fd });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { showError(`Không gửi được (${r.status}): ${fmtDetail(j.detail)}`); return; }
+      $('#ok').textContent = `Cảm ơn! Đã lưu ${j.clip_id} (nhóm ${j.age_group}, ${dur.toFixed(1)} s). Có thể ghi tiếp.`; $('#ok').hidden = false;
+      current = null; $('#btn-play').disabled = true; AudioUtils.drawWaveform($('#wave'), null); $('#time').textContent = '0:00 / 0:00';
+      $('#mic-title').textContent = 'Nhấn để ghi bản tiếp theo'; si = (si + 1) % SENTENCES.length; $('#sentence').textContent = SENTENCES[si];
+      loadStats();
+    } catch (err) { showError('Không kết nối được máy chủ: ' + err.message); }
+    finally { btn.textContent = '⇪ Gửi bản ghi'; btn.disabled = !current; }
   };
-  async function loadStats() { const s = await (await fetch('/api/collect/stats')).json(); $('#stats').innerHTML = `<span class="chip">Tổng: ${s.total}</span>` + Object.entries(s.by_group).map(([g, n]) => `<span class="chip">${g}: ${n}</span>`).join(''); }
+  async function loadStats() { try { const s = await (await fetch('/api/collect/stats')).json(); $('#stats').innerHTML = `<span class="chip">Tổng: ${s.total}</span>` + Object.entries(s.by_group).map(([g, n]) => `<span class="chip">${g}: ${n}</span>`).join(''); } catch (_) {} }
   AudioUtils.drawWaveform($('#wave'), null); loadStats();
 })();
 </script>

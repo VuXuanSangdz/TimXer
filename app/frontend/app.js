@@ -28,8 +28,14 @@
 
   // ---------- ghi âm ----------
   const btnRec = $('#btn-record');
+  const micAvailable = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  if (!micAvailable) {
+    $('#mic-title').textContent = 'Không ghi âm được trên trình duyệt này';
+    $('#mic-sub').textContent = window.isSecureContext ? 'Trình duyệt không hỗ trợ MediaRecorder — hãy dùng tab Tải lên file.' : `Trang mở qua HTTP (${location.host}) nên micro bị chặn — mở bằng https:// hoặc localhost, hoặc dùng tab Tải lên file.`;
+  }
   btnRec.addEventListener('click', async () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); return; }
+    if (!micAvailable) { showError(window.isSecureContext ? 'Trình duyệt không hỗ trợ ghi âm — hãy dùng tab Tải lên file.' : `Micro bị chặn vì trang mở qua HTTP (${location.host}). Mở bằng https:// hoặc http://localhost.`); return; }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false } });
       chunks = [];

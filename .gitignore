@@ -10,6 +10,7 @@ checkpoints/*.txt
 # model đã xuất: ONNX ~90 MB -> dùng Git LFS hoặc GitHub Release / HF Hub (xem README)
 app/model/*.onnx
 app/data/
+app/certs/
 kaggle_working/
 # python
 __pycache__/

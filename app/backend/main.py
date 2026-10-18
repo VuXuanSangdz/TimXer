@@ -132,13 +132,19 @@ async def collect(
     """Thu thập dữ liệu private: lưu audio + metadata vào data/raw/private (đưa vào pipeline bằng scripts/02_ingest_private.py)."""
     if consent.lower() not in ("true", "1", "yes", "on"):
         raise HTTPException(400, "Cần đồng ý chia sẻ dữ liệu (consent)")
-    group = age_group if age_group in AGE_GROUPS else (age_years_to_group(float(age)) if age else None)
-    if group is None:
-        raise HTTPException(400, "Thiếu tuổi hoặc nhóm tuổi")
+    group = (age_group or "").strip()
+    if group not in AGE_GROUPS:
+        raw = (age or "").strip()
+        if not raw:
+            raise HTTPException(400, "Thiếu tuổi hoặc nhóm tuổi")
+        try:
+            group = age_years_to_group(float(raw))
+        except ValueError as e:
+            raise HTTPException(400, f"Tuổi không hợp lệ: {raw}") from e
     blob = await _read_upload(file)
     PRIVATE_RAW_DIR.mkdir(parents=True, exist_ok=True)
     cid = datetime.now().strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:6]
-    ext = Path(file.filename or "rec.wav").suffix or ".wav"
+    ext = ".wav"  # frontend luôn gửi WAV PCM 16 kHz sau decodeToWav
     (PRIVATE_RAW_DIR / f"{cid}{ext}").write_bytes(blob)
     meta = {
         "clip_id": cid, "recorded_at": datetime.now().isoformat(timespec="seconds"), "age": age, "age_group": group,
