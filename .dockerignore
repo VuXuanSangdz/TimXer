@@ -1,0 +1,16 @@
+data/
+hf_cache/
+checkpoints/
+notebooks/
+kaggle/
+kaggle_working/
+reports/figures/
+.git/
+.venv/
+__pycache__/
+*.pyc
+app/data/
+app/certs/
+deploy/
+*.md
+!app/README_DEPLOY.md

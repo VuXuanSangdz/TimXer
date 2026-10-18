@@ -42,11 +42,25 @@ pinned: false
 > động (cần `torch`, `timm` trong `requirements-deploy.txt`) và nạp `timexer_dinov3_head.pt` (~7 MB, đã có trong
 > repo; chứa cả mean/std chuẩn hoá prosody).
 
-## B. Render / Railway / Fly.io
+## B. Render Docker Free (khuyến nghị nếu không dùng HF)
 
-* Render: *New → Web Service → Docker*, Dockerfile path `app/Dockerfile`, port 7860, plan Free/Starter.
-* Fly.io: `fly launch --dockerfile app/Dockerfile --internal-port 7860`.
-* Railway: deploy từ GitHub repo, đặt `Dockerfile path = app/Dockerfile`.
+Image gốc repo (`Dockerfile`) chỉ cài ONNX Runtime (không PyTorch) cho vừa gói Free **512 MB RAM**.
+
+1. Đưa repo lên GitHub (kèm `app/model/timexer_dinov3.onnx`).
+2. https://dashboard.render.com → **New → Blueprint** (đọc `render.yaml`)  
+   hoặc **New → Web Service** → kết nối repo:
+   - Runtime: **Docker**
+   - Dockerfile path: `Dockerfile` (thư mục gốc)
+   - Docker build context: `.`
+   - Instance: **Free**
+   - Health check: `/api/health`
+3. Render gán biến `PORT` — container đã lắng nghe `${PORT:-7860}`.
+4. Link dạng `https://timexer-ai-voice-age.onrender.com` (HTTPS → điện thoại ghi âm được).
+
+Giới hạn Free: ngủ sau 15 phút không ai vào, lần mở sau ~1 phút; hết 750 giờ instance/tháng thì tạm ngưng đến tháng sau.
+
+* Fly.io: `fly launch --dockerfile Dockerfile --internal-port 7860`.
+* Railway: deploy từ GitHub, Dockerfile = `Dockerfile`.
 
 ## C. VPS / máy nội bộ
 

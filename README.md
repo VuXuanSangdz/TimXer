@@ -259,8 +259,7 @@ uvicorn app.backend.main:app --host 0.0.0.0 --port 7860      # http://localhost:
 docker build -f app/Dockerfile -t timexer-ai . && docker run -p 7860:7860 timexer-ai
 ```
 
-**Deploy (Hugging Face Spaces – Docker, miễn phí)** — xem [`app/README_DEPLOY.md`](app/README_DEPLOY.md).
-Link hệ thống: `https://huggingface.co/spaces/<hf_username>/timexer-ai-voice-age` (điền sau khi deploy).
+**Deploy** — xem [`app/README_DEPLOY.md`](app/README_DEPLOY.md): Hugging Face Spaces (Docker), **Render Free** (`Dockerfile` + `render.yaml` ở thư mục gốc), hoặc chạy local cổng 7860.
 
 ---
 
@@ -270,11 +269,9 @@ Repo đã `git commit` sẵn trên nhánh `main`; model đã xuất; dataset đ�
 Chạy lần lượt (PowerShell, trong thư mục dự án):
 
 ```powershell
-# (1) GitHub — code + README chỉ chỗ update
+# (1) GitHub — code + README + model ONNX (đã nằm trong repo, ~94 MB)
 gh auth login
 gh repo create timexer-dinov3-voice-age --public --source . --remote origin --push
-# ONNX 94 MB không nằm trong git (xem .gitignore) -> đính kèm vào Release:
-gh release create v1.0 app/model/timexer_dinov3.onnx -t "TimeXer-DINOv3 v1.0" -n "ONNX export (mel, x_ex, prosody -> logits)"
 
 # (2) Kaggle — dataset public + notebook quy trình dữ liệu
 #   tải kaggle.json tại https://www.kaggle.com/settings -> %USERPROFILE%\.kaggle\kaggle.json

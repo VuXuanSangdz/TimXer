@@ -139,7 +139,15 @@
     hideMsg();
     let stream;
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
-    catch (err) { showError(MIC_ERRORS[err.name] || ('Không truy cập được micro: ' + (err.message || err.name))); return; }
+    catch (err) {
+      const msg = String(err.message || err.name || '');
+      if (/denied by system/i.test(msg)) {
+        showError('Windows đang tắt quyền micro cho trình duyệt (Permission denied by system). Mở Cài đặt Windows → Quyền riêng tư và bảo mật → Micro: bật “Quyền truy cập micro”, “Cho phép ứng dụng truy cập micro” và “Cho phép ứng dụng máy tính để bàn truy cập micro”. Tắt/bật lại Chrome hoặc Edge rồi tải lại trang.');
+        return;
+      }
+      showError(MIC_ERRORS[err.name] || ('Không truy cập được micro: ' + msg));
+      return;
+    }
     chunks = []; stopping = false;
     const mime = pickMime();
     try { rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }

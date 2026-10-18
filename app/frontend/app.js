@@ -55,7 +55,14 @@
       btnRec.classList.add('recording');
       $('#mic-title').textContent = 'Đang ghi… nhấn để dừng';
       recTimer = setInterval(() => { $('#mic-sub').textContent = `⏺ ${((Date.now() - recStart) / 1000).toFixed(1)} s`; if (Date.now() - recStart > 15000) mediaRecorder.stop(); }, 100);
-    } catch (err) { showError('Không truy cập được micro: ' + err.message); }
+    } catch (err) {
+      const msg = String(err.message || err.name || '');
+      if (/denied by system/i.test(msg)) {
+        showError('Windows đang tắt quyền micro cho trình duyệt. Cài đặt → Quyền riêng tư và bảo mật → Micro: bật quyền truy cập micro cho ứng dụng máy tính để bàn, rồi khởi động lại Chrome/Edge.');
+      } else {
+        showError('Không truy cập được micro: ' + msg);
+      }
+    }
   });
 
   // ---------- upload ----------

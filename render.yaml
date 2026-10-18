@@ -1,0 +1,14 @@
+# Blueprint: https://dashboard.render.com/blueprints
+# New → Blueprint → chọn repo này. Plan Free (512 MB). Service ngủ sau 15 phút không traffic.
+services:
+  - type: web
+    name: timexer-ai-voice-age
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

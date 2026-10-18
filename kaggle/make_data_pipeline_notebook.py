@@ -66,11 +66,14 @@ assert INPUT is not None, 'Không tìm thấy dataset. Trên Kaggle: Add Data ->
 WORK = Path('/kaggle/working') if Path('/kaggle/working').exists() else Path('kaggle_working'); WORK.mkdir(exist_ok=True)
 print('INPUT =', INPUT); print('WORK  =', WORK)
 
-# ---- thư viện xử lý âm thanh (Kaggle đã có librosa/soundfile; noisereduce cần cài) ----
+# ---- thư viện xử lý âm thanh (Kaggle đã có librosa/soundfile) ----
+# noisereduce chỉ dùng để minh hoạ khử nhiễu; nếu không cài được (Kaggle tắt Internet / DNS lỗi)
+# thì audio_processing.denoise() tự bỏ qua và giữ nguyên waveform.
 try:
     import noisereduce  # noqa
+    print('noisereduce: OK')
 except ImportError:
-    subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'noisereduce'], check=False)
+    print('noisereduce: không có — bước khử nhiễu sẽ được bỏ qua (không làm hỏng pipeline)')
 import librosa, soundfile as sf
 
 # ---- import code pipeline đi kèm dataset ----
