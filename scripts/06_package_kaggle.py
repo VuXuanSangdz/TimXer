@@ -45,7 +45,7 @@ def main():
     p.add_argument("--processed", default=str(ROOT / "data" / "processed"))
     p.add_argument("--out", default=str(ROOT / "data" / "kaggle_dataset"))
     p.add_argument("--slug", default="voice-age-timexer-dinov3-vi")
-    p.add_argument("--title", default="Voice Age (TimeXer-DINOv3) — Vietnamese + English, 5 age groups")
+    p.add_argument("--title", default="Voice Age Groups (vi+en) for TimeXer-DINOv3")  # Kaggle: 6–50 ký tự
     p.add_argument("--with-audio", action="store_true", help="kèm audio 16 kHz (FLAC) đã chuẩn hoá 5 s")
     p.add_argument("--username", default=None)
     args = p.parse_args()
@@ -93,7 +93,7 @@ def main():
         "id": f"{user}/{args.slug}",
         "licenses": [{"name": "CC0-1.0"}],
         "keywords": ["audio", "speech", "age prediction", "time series", "transformer", "vietnamese"],
-        "subtitle": "Voice clips -> log-Mel (endogenous) + recording context (exogenous) for TimeXer age-group classification",
+        "subtitle": "8.5k voice clips (vi+en): log-Mel + recording context, 5 age groups",  # Kaggle: 20–80 ký tự
         "description": "See README.md in the dataset.",
     }
     (out / "dataset-metadata.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
