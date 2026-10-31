@@ -298,7 +298,7 @@ docker build -f app/Dockerfile -t timexer-ai . && docker run -p 7860:7860 timexe
 
 ## 7. CI/CD và image Docker Hub
 
-* **CI** (`.github/workflows/ci.yml`, mỗi push/PR lên `main`): chạy `pytest tests/test_loss.py` (đối chiếu \(\mathcal{L}\) với công thức §1) và `docker build` image inference, không push.
+* **CI** (`.github/workflows/ci.yml`, mỗi push/PR lên `main`): chạy `python -m pytest tests/test_loss.py` (đối chiếu \(\mathcal{L}\) với công thức §1) và `docker build` image inference, không push.
 * **CD** (`.github/workflows/dockerhub.yml`, push `main` hoặc chạy tay): build `Dockerfile` (ONNX, không PyTorch) và đẩy image **public**
   `docker.io/<dockerhub_user>/timexer-dinov3-voice-age:latest`.
 

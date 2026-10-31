@@ -19,7 +19,7 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install pytest
       - name: Kiểm tra công thức loss TimeXer-DINOv3
-        run: pytest tests/test_loss.py -q
+        run: python -m pytest tests/test_loss.py -q
 
   docker-build:
     runs-on: ubuntu-latest
