@@ -292,45 +292,28 @@ uvicorn app.backend.main:app --host 0.0.0.0 --port 7860      # http://localhost:
 docker build -f app/Dockerfile -t timexer-ai . && docker run -p 7860:7860 timexer-ai
 ```
 
-**Deploy** — xem [`app/README_DEPLOY.md`](app/README_DEPLOY.md): Hugging Face Spaces (Docker), **Render Free** (`Dockerfile` + `render.yaml` ở thư mục gốc), hoặc chạy local cổng 7860.
+**Deploy đang chạy:** https://clean-interface-paste-bills.trycloudflare.com (`/api/health` trả model ONNX đã load). Link này đi qua máy đang bật app; tắt máy thì mất. Image public để chạy ở máy khác: `ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest`. Cấu hình host cố định (Render Free, Hugging Face Docker) nằm ở [`app/README_DEPLOY.md`](app/README_DEPLOY.md) và `render.yaml`.
 
 ---
 
 ## 7. CI/CD và image Docker Hub
 
 * **CI** (`.github/workflows/ci.yml`, mỗi push/PR lên `main`): chạy `python -m pytest tests/test_loss.py` (đối chiếu \(\mathcal{L}\) với công thức §1) và `docker build` image inference, không push.
-* **CD — GHCR** (`.github/workflows/ghcr.yml`, push `main` hoặc chạy tay): cùng Dockerfile, đẩy `ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest` bằng `GITHUB_TOKEN` (không cần secret thêm). Package mới mặc định Private; vào package → Package settings → Change visibility → Public (một lần, không đảo ngược được).
-* **CD — Docker Hub** (`.github/workflows/dockerhub.yml`): đẩy `docker.io/<dockerhub_user>/timexer-dinov3-voice-age:latest` khi repo có secret `DOCKERHUB_USERNAME` và `DOCKERHUB_TOKEN` (Access Token, quyền Read & Write). Repo trên Docker Hub để chế độ Public.
+* **CD — GHCR** (`.github/workflows/ghcr.yml`): image **public** `ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest`. Kéo không cần đăng nhập.
+* **CD — Docker Hub** (`.github/workflows/dockerhub.yml`): bản sao trên Docker Hub chạy khi repo có secret `DOCKERHUB_USERNAME` và `DOCKERHUB_TOKEN`.
 
 ```bash
 docker pull ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest
 docker run -p 7860:7860 ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest
 ```
 
-## 8. Nộp bài: 3 lệnh cần tài khoản (GitHub / Kaggle / Hugging Face)
+## 8. Nộp bài
 
-Repo đã `git commit` sẵn trên nhánh `main`; model đã xuất; dataset đã đóng gói trong `data/kaggle_dataset/`.
-Chạy lần lượt (PowerShell, trong thư mục dự án):
-
-```powershell
-# (1) GitHub — code + README + model ONNX (đã nằm trong repo, ~94 MB)
-gh auth login
-gh repo create timexer-dinov3-voice-age --public --source . --remote origin --push
-
-# (2) Kaggle — dataset public + notebook quy trình dữ liệu
-#   tải kaggle.json tại https://www.kaggle.com/settings -> %USERPROFILE%\.kaggle\kaggle.json
-pip install kaggle
-.\kaggle\push_kaggle.ps1 -Username sangvuxuan
-#   -> https://www.kaggle.com/datasets/sangvuxuan/voice-age-timexer-dinov3-vi
-#   -> https://www.kaggle.com/code/sangvuxuan/notebookd2bdfc5ac9
-
-# (3) Hugging Face Spaces — hệ thống chạy online (xem app/README_DEPLOY.md)
-hf auth login
-#   ... các bước clone Space / copy src, configs, app / git lfs / push trong README_DEPLOY.md
-#   -> https://huggingface.co/spaces/<hf_username>/timexer-ai-voice-age
-```
-
-Sau khi có link, thay 3 placeholder `<...>` trong README này (§4, §6) rồi `git commit --amend`/`git push`.
+* GitHub: https://github.com/VuXuanSangdz/TimXer
+* Kaggle dataset: https://www.kaggle.com/datasets/sangvuxuan/voice-age-timexer-dinov3-vi
+* Kaggle notebook: https://www.kaggle.com/code/sangvuxuan/notebookd2bdfc5ac9
+* Image public: `ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest`
+* Demo: https://clean-interface-paste-bills.trycloudflare.com
 
 ---
 
