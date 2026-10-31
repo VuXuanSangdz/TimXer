@@ -299,14 +299,12 @@ docker build -f app/Dockerfile -t timexer-ai . && docker run -p 7860:7860 timexe
 ## 7. CI/CD và image Docker Hub
 
 * **CI** (`.github/workflows/ci.yml`, mỗi push/PR lên `main`): chạy `python -m pytest tests/test_loss.py` (đối chiếu \(\mathcal{L}\) với công thức §1) và `docker build` image inference, không push.
-* **CD** (`.github/workflows/dockerhub.yml`, push `main` hoặc chạy tay): build `Dockerfile` (ONNX, không PyTorch) và đẩy image **public**
-  `docker.io/<dockerhub_user>/timexer-dinov3-voice-age:latest`.
-
-Trên GitHub repo → Settings → Secrets → Actions, thêm `DOCKERHUB_USERNAME` và `DOCKERHUB_TOKEN` (Access Token, quyền Read & Write). Image public thì trên Docker Hub để repo ở chế độ Public.
+* **CD — GHCR** (`.github/workflows/ghcr.yml`, push `main` hoặc chạy tay): cùng Dockerfile, đẩy `ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest` bằng `GITHUB_TOKEN` (không cần secret thêm). Package mới mặc định Private; vào package → Package settings → Change visibility → Public (một lần, không đảo ngược được).
+* **CD — Docker Hub** (`.github/workflows/dockerhub.yml`): đẩy `docker.io/<dockerhub_user>/timexer-dinov3-voice-age:latest` khi repo có secret `DOCKERHUB_USERNAME` và `DOCKERHUB_TOKEN` (Access Token, quyền Read & Write). Repo trên Docker Hub để chế độ Public.
 
 ```bash
-docker pull <dockerhub_user>/timexer-dinov3-voice-age:latest
-docker run -p 7860:7860 <dockerhub_user>/timexer-dinov3-voice-age:latest
+docker pull ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest
+docker run -p 7860:7860 ghcr.io/vuxuansangdz/timexer-dinov3-voice-age:latest
 ```
 
 ## 8. Nộp bài: 3 lệnh cần tài khoản (GitHub / Kaggle / Hugging Face)
