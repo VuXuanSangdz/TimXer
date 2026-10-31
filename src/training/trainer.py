@@ -11,8 +11,8 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
+from src.training.loss import WeightedLabelSmoothingCE
 from src.training.metrics import classification_metrics
 
 
@@ -32,8 +32,11 @@ class Trainer:
         t = cfg["train"]
         params = model.trainable_parameters() if hasattr(model, "trainable_parameters") else model.parameters()
         self.opt = torch.optim.AdamW(params, lr=t["lr"], weight_decay=t.get("weight_decay", 0.01))
-        self.class_weights = class_weights.to(device) if class_weights is not None else None
-        self.label_smoothing = t.get("label_smoothing", 0.0)
+        self.criterion = WeightedLabelSmoothingCE(
+            n_classes=int(cfg.get("model", {}).get("n_classes", 5) or 5),
+            label_smoothing=t.get("label_smoothing", 0.0),
+            weight=class_weights,
+        ).to(device)
         self.patience = t.get("patience", 10)
         self.min_epochs = t.get("min_epochs", 5)
         self.grad_clip = t.get("grad_clip", 1.0)
@@ -53,7 +56,7 @@ class Trainer:
         return self.model(batch["mel"].to(self.device), x_ex, prosody)
 
     def _loss(self, logits: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return F.cross_entropy(logits, y, weight=self.class_weights, label_smoothing=self.label_smoothing)
+        return self.criterion(logits, y)
 
     def train_epoch(self, loader) -> float:
         self.model.train()

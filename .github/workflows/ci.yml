@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  loss-and-import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cài torch CPU và pytest
+        run: |
+          pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install pytest
+      - name: Kiểm tra công thức loss TimeXer-DINOv3
+        run: pytest tests/test_loss.py -q
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image (không push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: timexer-dinov3-voice-age:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

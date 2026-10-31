@@ -29,7 +29,37 @@ một *global token*. Ta ánh xạ bài toán giọng nói vào đúng khung nà
 | (a) Endogenous embedding | **DINOv3 ViT‑S/16** trên ảnh phổ → 14 token thời gian + CLS = global token; thêm **1 prosody token** (51 thống kê MFCC/F0/formant/energy → Linear) |
 | (b) Exogenous embedding | giữ nguyên `ExEmbedding` (Linear T→d_model cho từng biến) |
 | (c)(d) Self‑/Cross‑Attention, FFN | giữ nguyên `EncoderLayer` |
-| Projection (hồi quy T bước) | `ClassificationHead` → 5 lớp |
+| Projection (hồi quy T bước, loss MSE) | `ClassificationHead` → 5 lớp, **loss đổi thành cross-entropy có trọng số** (mục dưới) |
+
+Ảnh phổ \(S \in \mathbb{R}^{128 \times 251}\) đi qua DINOv3 (backbone **đóng băng**, không học loss tự giám sát DINO):
+
+\[
+I = \mathrm{ImageNetNorm}(\mathrm{Resize}_{224}(S)), \quad
+[c;\, P] = \mathrm{DINOv3}(I), \quad c \in \mathbb{R}^{384},\; P \in \mathbb{R}^{196 \times 384}
+\]
+
+Token nội sinh (chế độ `temporal_concat`: nối 14 dải tần của cùng một cột thời gian) và global token:
+
+\[
+u_t = W_{\mathrm{tok}}\,\mathrm{Concat}_{f}(P_{t,f}) + \mathrm{pos}_t, \quad
+g = W_{\mathrm{glb}} c, \quad
+h = \mathrm{MLP}(\mathrm{zscore}(p))
+\]
+
+\(u_t\) (14 token), \(h\) (prosody) và \(g\) đi vào đúng các lớp Self-Attention / Cross-Attention với biến ngoại sinh của TimeXer. Head đọc \([g \,\|\, \mathrm{mean}(u,h)]\) ra logit \(z \in \mathbb{R}^{5}\).
+
+**Hàm mất mát.** TimeXer gốc tối ưu MSE trên dự báo \(T\) bước. Head phân loại thay projection đó, nên hàm học là cross-entropy làm trơn nhãn, nhân trọng số lớp (\(\alpha = 0.5\), \(\varepsilon = 0.05\)):
+
+\[
+w_c = \frac{(N/n_c)^{\alpha}}{\mathrm{mean}_j (N/n_j)^{\alpha}}, \quad
+q_k = (1-\varepsilon)\,\mathbf{1}[k=y] + \varepsilon/K
+\]
+
+\[
+\mathcal{L} = -\frac{1}{B}\sum_{i=1}^{B} w_{y_i} \sum_{k=1}^{K} q_{ik}\,\log \mathrm{softmax}(z_i)_k
+\]
+
+Gradient chỉ đi vào phần TimeXer học được (projection token, prosody, ExEmbedding, encoder, head). Tiêu chí chọn checkpoint trên tập val là \(\mathrm{macro\text{-}F1} - 0{,}1\cdot\mathrm{ordinal\text{-}MAE}\), không cộng vào \(\mathcal{L}\). Công thức được cài đúng trong `src/training/loss.py` và kiểm bởi `tests/test_loss.py`.
 
 ![Kiến trúc](reports/figures/fig_architecture.png)
 
@@ -50,7 +80,7 @@ timexer-dinov3-voice-age/
 │   ├── models/timexer_original.py   # ★ TimeXer gốc cho dự báo (tham chiếu)
 │   ├── models/dinov3_encoder.py     # ✚ MỚI: DINOv3Encoder thay EnEmbedding (+ MelPatchEmbedding cho ablation)
 │   ├── models/timexer_dinov3.py     # ✚ MỚI: TimeXerDINOv3 (phân loại) + TimeXerVoiceBaseline
-│   └── training/{trainer,metrics}.py
+│   └── training/{loss,trainer,metrics}.py   # loss = weighted label-smoothing CE
 ├── scripts/
 │   ├── 01_seed_common_voice.py      # thu thập seed có nhãn tuổi (Common Voice 17, CC0)
 │   ├── 02_ingest_private.py         # nhập bản ghi private từ app /collect hoặc CSV ngoài
@@ -70,6 +100,9 @@ timexer-dinov3-voice-age/
 │   ├── model/                       # model_card.json, timexer_dinov3_head.pt, timexer_dinov3.onnx (LFS/Release)
 │   ├── Dockerfile · requirements-deploy.txt · README_DEPLOY.md
 ├── notebooks/timexer_dinov3_voice_age.ipynb
+├── tests/test_loss.py
+├── Dockerfile · render.yaml
+├── .github/workflows/{ci,dockerhub}.yml
 └── reports/{model_comparison.md, figures/}
 ```
 
@@ -263,7 +296,20 @@ docker build -f app/Dockerfile -t timexer-ai . && docker run -p 7860:7860 timexe
 
 ---
 
-## 7. Nộp bài: 3 lệnh cần tài khoản (GitHub / Kaggle / Hugging Face)
+## 7. CI/CD và image Docker Hub
+
+* **CI** (`.github/workflows/ci.yml`, mỗi push/PR lên `main`): chạy `pytest tests/test_loss.py` (đối chiếu \(\mathcal{L}\) với công thức §1) và `docker build` image inference, không push.
+* **CD** (`.github/workflows/dockerhub.yml`, push `main` hoặc chạy tay): build `Dockerfile` (ONNX, không PyTorch) và đẩy image **public**
+  `docker.io/<dockerhub_user>/timexer-dinov3-voice-age:latest`.
+
+Trên GitHub repo → Settings → Secrets → Actions, thêm `DOCKERHUB_USERNAME` và `DOCKERHUB_TOKEN` (Access Token, quyền Read & Write). Image public thì trên Docker Hub để repo ở chế độ Public.
+
+```bash
+docker pull <dockerhub_user>/timexer-dinov3-voice-age:latest
+docker run -p 7860:7860 <dockerhub_user>/timexer-dinov3-voice-age:latest
+```
+
+## 8. Nộp bài: 3 lệnh cần tài khoản (GitHub / Kaggle / Hugging Face)
 
 Repo đã `git commit` sẵn trên nhánh `main`; model đã xuất; dataset đã đóng gói trong `data/kaggle_dataset/`.
 Chạy lần lượt (PowerShell, trong thư mục dự án):
@@ -290,7 +336,7 @@ Sau khi có link, thay 3 placeholder `<...>` trong README này (§4, §6) rồi 
 
 ---
 
-## 8. Tài liệu tham khảo
+## 9. Tài liệu tham khảo
 
 * Wang, Y. et al. *TimeXer: Empowering Transformers for Time Series Forecasting with Exogenous Variables.* NeurIPS 2024.
 * Siméoni, O. et al. *DINOv3.* Meta AI, 2025. Trọng số: `timm/vit_small_patch16_dinov3.lvd1689m` (DINOv3 License).
